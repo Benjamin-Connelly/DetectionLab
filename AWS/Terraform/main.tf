@@ -27,7 +27,7 @@ resource "aws_route" "internet_access" {
 # Create a subnet to launch our instances into
 resource "aws_subnet" "default" {
   vpc_id                  = aws_vpc.default.id
-  cidr_block              = "192.168.38.0/24"
+  cidr_block              = "192.168.56.0/24"
   availability_zone       = var.availability_zone
   map_public_ip_on_launch = true
   tags = var.custom-tags
@@ -36,8 +36,8 @@ resource "aws_subnet" "default" {
 # Adjust VPC DNS settings to not conflict with lab
 resource "aws_vpc_dhcp_options" "default" {
   domain_name          = "windomain.local"
-  domain_name_servers  = concat([aws_instance.dc.private_ip], var.external_dns_servers)
-  netbios_name_servers = [aws_instance.dc.private_ip]
+  domain_name_servers  = concat(["192.168.56.102"], var.external_dns_servers)
+  netbios_name_servers = ["192.168.56.102"]
   tags = var.custom-tags
 }
 
@@ -104,7 +104,7 @@ resource "aws_security_group" "logger" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["192.168.38.0/24"]
+    cidr_blocks = ["192.168.56.0/24"]
   }
 
   # outbound internet access
@@ -151,7 +151,7 @@ resource "aws_security_group" "windows" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["192.168.38.0/24"]
+    cidr_blocks = ["192.168.56.0/24"]
   }
 
   # outbound internet access
@@ -172,14 +172,14 @@ resource "aws_instance" "logger" {
   instance_type = "t3.medium"
   ami           = coalesce(var.logger_ami, data.aws_ami.logger_ami.image_id)
 
-  tags = merge(var.custom-tags, map(
-    "Name", "${var.instance_name_prefix}logger"
+  tags = merge(var.custom-tags, tomap(
+    {"Name" = "${var.instance_name_prefix}logger"}
   ))
 
   subnet_id              = aws_subnet.default.id
   vpc_security_group_ids = [aws_security_group.logger.id]
   key_name               = aws_key_pair.auth.key_name
-  private_ip             = "192.168.38.105"
+  private_ip             = "192.168.56.105"
 
   provisioner "remote-exec" {
     inline = [
@@ -192,6 +192,12 @@ resource "aws_instance" "logger" {
       "sudo cp /opt/DetectionLab/Vagrant/resources/fleet/fleet.service /etc/systemd/system/fleet.service && sudo systemctl daemon-reload && sudo service fleet restart",
       "sudo service suricata restart",
       "sudo /opt/DetectionLab/Vagrant/logger_bootstrap.sh splunk_only",
+      "sudo systemctl stop guacd",
+      "sudo useradd -M -d /var/lib/guacd/ -r -s /sbin/nologin -c 'Guacd User' guacd",
+      "sudo mkdir /var/lib/guacd && sudo chown -R guacd: /var/lib/guacd && sudo sed -i 's/daemon/guacd/' /lib/systemd/system/guacd.service",
+      "sudo sed -i 's/192.168.38/192.168.56/g' /etc/guacamole/user-mapping.xml",
+      "sudo sed -i 's/192.168.38/192.168.56/g' /etc/netplan/50-vagrant.yaml.vmimport",
+      "sudo systemctl daemon-reload && sudo systemctl start guacd && sudo systemctl restart tomcat9"
     ]
 
     connection {
@@ -210,13 +216,25 @@ resource "aws_instance" "logger" {
 
 resource "aws_instance" "dc" {
   instance_type = "t3.medium"
+  depends_on = [
+    aws_vpc_dhcp_options.default,
+    aws_vpc_dhcp_options_association.default
+  ]
+
+  provisioner "file" {
+    source      = "scripts/bootstrap.ps1"
+    destination = "C:\\Temp\\bootstrap.ps1"
+
+    connection {
+      type     = "winrm"
+      user     = "vagrant"
+      password = "vagrant"
+      host     = coalesce(self.public_ip, self.private_ip)
+    }
+  }
 
   provisioner "remote-exec" {
-    inline = [
-      "choco install -force -y winpcap",
-      "ipconfig /renew",
-      "powershell.exe -c \"Add-Content 'c:\\windows\\system32\\drivers\\etc\\hosts' '        192.168.38.103    wef.windomain.local'\"",
-      ]
+    inline = ["powershell.exe -File C:\\Temp\\bootstrap.ps1"]
 
     connection {
       type     = "winrm"
@@ -229,13 +247,13 @@ resource "aws_instance" "dc" {
   # Uses the local variable if external data source resolution fails
   ami = coalesce(var.dc_ami, data.aws_ami.dc_ami.image_id)
 
-  tags = merge(var.custom-tags, map(
-    "Name", "${var.instance_name_prefix}dc.windomain.local"
+  tags = merge(var.custom-tags, tomap(
+    {"Name" = "${var.instance_name_prefix}dc.windomain.local"}
   ))
 
   subnet_id              = aws_subnet.default.id
   vpc_security_group_ids = [aws_security_group.windows.id]
-  private_ip             = "192.168.38.102"
+  private_ip             = "192.168.56.102"
 
   root_block_device {
     delete_on_termination = true
@@ -244,14 +262,25 @@ resource "aws_instance" "dc" {
 
 resource "aws_instance" "wef" {
   instance_type = "t3.medium"
+    depends_on = [
+    aws_vpc_dhcp_options.default,
+    aws_vpc_dhcp_options_association.default
+  ]
+
+  provisioner "file" {
+    source      = "scripts/bootstrap.ps1"
+    destination = "C:\\Temp\\bootstrap.ps1"
+
+    connection {
+      type     = "winrm"
+      user     = "vagrant"
+      password = "vagrant"
+      host     = coalesce(self.public_ip, self.private_ip)
+    }
+  }
 
   provisioner "remote-exec" {
-    inline = [
-      "choco install -force -y winpcap",
-      "powershell.exe -c \"Add-Content 'c:\\windows\\system32\\drivers\\etc\\hosts' '        192.168.38.102    dc.windomain.local'\"",
-      "powershell.exe -c \"Add-Content 'c:\\windows\\system32\\drivers\\etc\\hosts' '        192.168.38.102    windomain.local'\"",
-      "ipconfig /renew",
-    ]
+    inline = ["powershell.exe -File C:\\Temp\\bootstrap.ps1"]
 
     connection {
       type     = "winrm"
@@ -264,13 +293,13 @@ resource "aws_instance" "wef" {
   # Uses the local variable if external data source resolution fails
   ami = coalesce(var.wef_ami, data.aws_ami.wef_ami.image_id)
 
-  tags = merge(var.custom-tags, map(
-    "Name", "${var.instance_name_prefix}wef.windomain.local"
+  tags = merge(var.custom-tags, tomap(
+    {"Name" = "${var.instance_name_prefix}wef.windomain.local"}
   ))
 
   subnet_id              = aws_subnet.default.id
   vpc_security_group_ids = [aws_security_group.windows.id]
-  private_ip             = "192.168.38.103"
+  private_ip             = "192.168.56.103"
 
   root_block_device {
     delete_on_termination = true
@@ -278,15 +307,26 @@ resource "aws_instance" "wef" {
 }
 
 resource "aws_instance" "win10" {
-  instance_type = "t2.medium"
+  instance_type = "t2.large"
+    depends_on = [
+    aws_vpc_dhcp_options.default,
+    aws_vpc_dhcp_options_association.default
+  ]
+
+  provisioner "file" {
+    source      = "scripts/bootstrap.ps1"
+    destination = "C:\\Temp\\bootstrap.ps1"
+
+    connection {
+      type     = "winrm"
+      user     = "vagrant"
+      password = "vagrant"
+      host     = coalesce(self.public_ip, self.private_ip)
+    }
+  }
 
   provisioner "remote-exec" {
-    inline = [
-      "choco install -force -y winpcap",
-      "powershell.exe -c \"Add-Content 'c:\\windows\\system32\\drivers\\etc\\hosts' '        192.168.38.102    dc.windomain.local'\"",
-      "powershell.exe -c \"Add-Content 'c:\\windows\\system32\\drivers\\etc\\hosts' '        192.168.38.102    windomain.local'\"",
-      "ipconfig /renew",
-    ]
+    inline = ["powershell.exe -File C:\\Temp\\bootstrap.ps1"]
 
     connection {
       type     = "winrm"
@@ -299,13 +339,13 @@ resource "aws_instance" "win10" {
   # Uses the local variable if external data source resolution fails
   ami = coalesce(var.win10_ami, data.aws_ami.win10_ami.image_id)
 
-  tags = merge(var.custom-tags, map(
-    "Name", "${var.instance_name_prefix}win10.windomain.local"
+  tags = merge(var.custom-tags, tomap(
+    {"Name" = "${var.instance_name_prefix}win10.windomain.local"}
   ))
 
   subnet_id              = aws_subnet.default.id
   vpc_security_group_ids = [aws_security_group.windows.id]
-  private_ip             = "192.168.38.104"
+  private_ip             = "192.168.56.104"
 
   root_block_device {
     delete_on_termination = true

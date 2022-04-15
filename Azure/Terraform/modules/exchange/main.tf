@@ -4,7 +4,7 @@ locals {
 }
 
 provider "azurerm" {
-  version = "=2.12.0"
+  version = ">=2.93.0"
   features {}
 }
 
@@ -74,7 +74,7 @@ resource "azurerm_network_interface" "exchange-nic" {
     name                          = "myNicConfiguration"
     subnet_id                     = var.subnet_id
     private_ip_address_allocation = "Static"
-    private_ip_address            = "192.168.38.106"
+    private_ip_address            = "192.168.56.106"
     public_ip_address_id          = azurerm_public_ip.exchange-publicip.id
   }
 }
