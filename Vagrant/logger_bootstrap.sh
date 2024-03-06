@@ -95,6 +95,7 @@ fix_eth1_static_ip() {
       return 0
     fi
   fi
+
   # TODO: try to set correctly directly through vagrant net config
   sudo chmod 600 /etc/netplan/50*
   sudo netplan set --origin-hint 90-disable-eth1-dhcp ethernets.eth1.dhcp4=false
