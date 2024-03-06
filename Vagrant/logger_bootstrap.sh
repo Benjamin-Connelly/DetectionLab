@@ -33,6 +33,7 @@ echo "apt-fast apt-fast/maxdownloads string 10" | debconf-set-selections
 echo "apt-fast apt-fast/dlflag boolean true" | debconf-set-selections
 
 apt_install_prerequisites() {
+  echo "127.0.0.1 logger" >> /etc/hosts
   echo "[$(date +%H:%M:%S)]: Adding apt repositories..."
   # Add repository for apt-fast
   add-apt-repository -y -n ppa:apt-fast/stable 
@@ -95,6 +96,7 @@ fix_eth1_static_ip() {
     fi
   fi
   # TODO: try to set correctly directly through vagrant net config
+  sudo chmod 600 /etc/netplan/50*
   netplan set --origin-hint 90-disable-eth1-dhcp ethernets.eth1.dhcp4=false
   netplan apply
 
