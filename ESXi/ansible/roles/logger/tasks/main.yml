@@ -32,6 +32,7 @@
     dest: /tmp
     owner: vagrant
     group: vagrant
+    mode: '0700'
 
 - name: Copy the netplan file over as root
   shell: "mv /tmp/01-netcfg.yaml /etc/netplan/01-netcfg.yaml"
