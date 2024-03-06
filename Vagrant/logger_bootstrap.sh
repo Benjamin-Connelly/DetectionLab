@@ -95,38 +95,38 @@ fix_eth1_static_ip() {
       return 0
     fi
   fi
-  # TODO: try to set correctly directly through vagrant net config
-  sudo chmod 600 /etc/netplan/50*
-  sudo netplan set --origin-hint 90-disable-eth1-dhcp ethernets.eth1.dhcp4=false
-  sudo netplan apply
+  # # TODO: try to set correctly directly through vagrant net config
+  # sudo chmod 600 /etc/netplan/50*
+  # sudo netplan set --origin-hint 90-disable-eth1-dhcp ethernets.eth1.dhcp4=false
+  # sudo netplan apply
 
-  # Fix eth1 if the IP isn't set correctly
-  ETH1_IP=$(ip -4 addr show eth1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
-  if [ "$ETH1_IP" != "192.168.56.105" ]; then
-    echo "Incorrect IP Address settings detected. Attempting to fix."
-    ip link set dev eth1 down
-    ip addr flush dev eth1
-    ip link set dev eth1 up
-    counter=0
-    while :; do
-      ETH1_IP=$(ip -4 addr show eth1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
-      if [ "$ETH1_IP" == "192.168.56.105" ]; then
-        echo "[$(date +%H:%M:%S)]: The static IP has been fixed and set to 192.168.56.105"
-        break
-      else
-        if [ $counter -le 20 ]; then
-          let counter=counter+1
-          echo "[$(date +%H:%M:%S)]: Waiting for IP $counter/20 seconds"
-          sleep 1
-          continue
-        else
-          echo "[$(date +%H:%M:%S)]: Failed to fix the broken static IP for eth1. Exiting because this will cause problems with other VMs."
-          echo "[$(date +%H:%M:%S)]: eth1's current IP address is $ETH1_IP"
-          exit 1
-        fi
-      fi
-    done
-  fi
+  # # Fix eth1 if the IP isn't set correctly
+  # ETH1_IP=$(ip -4 addr show eth1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
+  # if [ "$ETH1_IP" != "192.168.56.105" ]; then
+  #   echo "Incorrect IP Address settings detected. Attempting to fix."
+  #   ip link set dev eth1 down
+  #   ip addr flush dev eth1
+  #   ip link set dev eth1 up
+  #   counter=0
+  #   while :; do
+  #     ETH1_IP=$(ip -4 addr show eth1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
+  #     if [ "$ETH1_IP" == "192.168.56.105" ]; then
+  #       echo "[$(date +%H:%M:%S)]: The static IP has been fixed and set to 192.168.56.105"
+  #       break
+  #     else
+  #       if [ $counter -le 20 ]; then
+  #         let counter=counter+1
+  #         echo "[$(date +%H:%M:%S)]: Waiting for IP $counter/20 seconds"
+  #         sleep 1
+  #         continue
+  #       else
+  #         echo "[$(date +%H:%M:%S)]: Failed to fix the broken static IP for eth1. Exiting because this will cause problems with other VMs."
+  #         echo "[$(date +%H:%M:%S)]: eth1's current IP address is $ETH1_IP"
+  #         exit 1
+  #       fi
+  #     fi
+  #   done
+  # fi
 
   # Make sure we do have a DNS resolution
   while true; do
