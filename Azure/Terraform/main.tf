@@ -231,8 +231,8 @@ resource "azurerm_virtual_machine" "logger" {
 
   storage_image_reference {
     publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-focal"
-    sku       = "20_04-lts-gen2"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
     version   = "latest"
   }
 
@@ -265,7 +265,7 @@ resource "azurerm_virtual_machine" "logger" {
       private_key = file(var.private_key_path)
     }
     inline = [
-      "sudo add-apt-repository universe && sudo apt-get -qq update && sudo apt-get -qq install -y git",
+      "sudo add-apt-repository -y universe && sudo apt-get -qq update && sudo apt-get -qq install -y git",
       "sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config && sudo service ssh restart",
       "echo 'logger' | sudo tee /etc/hostname && sudo hostnamectl set-hostname logger",
       "sudo adduser --disabled-password --gecos \"\" vagrant && echo 'vagrant:vagrant' | sudo chpasswd",
@@ -558,7 +558,7 @@ resource "azurerm_virtual_machine" "win10" {
   storage_image_reference {
     publisher = "MicrosoftWindowsDesktop"
     offer     = "Windows-10"
-    sku       = "19h1-pron"
+    sku       = "win10-22h2-pron"
     version   = "latest"
   }
 
