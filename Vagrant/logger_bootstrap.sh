@@ -97,8 +97,8 @@ fix_eth1_static_ip() {
   fi
   # TODO: try to set correctly directly through vagrant net config
   sudo chmod 600 /etc/netplan/50*
-  netplan set --origin-hint 90-disable-eth1-dhcp ethernets.eth1.dhcp4=false
-  netplan apply
+  sudo netplan set --origin-hint 90-disable-eth1-dhcp ethernets.eth1.dhcp4=false
+  sudo netplan apply
 
   # Fix eth1 if the IP isn't set correctly
   ETH1_IP=$(ip -4 addr show eth1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
