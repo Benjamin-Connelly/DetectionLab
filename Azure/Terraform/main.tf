@@ -268,7 +268,7 @@ resource "azurerm_virtual_machine" "logger" {
       "sudo add-apt-repository -y universe && sudo apt-get -qq update && sudo apt-get -qq install -y git",
       "sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config && sudo service ssh restart",
       "echo 'logger' | sudo tee /etc/hostname && sudo hostnamectl set-hostname logger",
-      "echo '127.0.0.1 logger' | sudo tee -a /etc/hosts,
+      "echo '127.0.0.1 logger' | sudo tee -a /etc/hosts",
       "sudo adduser --disabled-password --gecos \"\" vagrant && echo 'vagrant:vagrant' | sudo chpasswd",
       "echo 'vagrant:vagrant' | sudo chpasswd",
       "sudo mkdir /home/vagrant/.ssh && sudo cp /home/ubuntu/.ssh/authorized_keys /home/vagrant/.ssh/authorized_keys && sudo chown -R vagrant:vagrant /home/vagrant/.ssh",
