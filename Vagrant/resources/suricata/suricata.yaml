@@ -128,7 +128,7 @@ af-packet:
     cluster-id: 98
     cluster-type: cluster_flow
     defrag: yes
-  - interface: eth1
+  - interface: eth0
     cluster-id: 99
     cluster-type: cluster_flow
     defrag: yes

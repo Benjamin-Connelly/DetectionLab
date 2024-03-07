@@ -5,7 +5,7 @@
 
 # Override existing DNS Settings using netplan, but don't do it for Terraform AWS builds
 if ! curl -s 169.254.169.254 --connect-timeout 2 >/dev/null; then
-  echo -e "    eth1:\n      dhcp4: true\n      nameservers:\n        addresses: [8.8.8.8,8.8.4.4]" >>/etc/netplan/01-netcfg.yaml
+  echo -e "    eth0:\n      dhcp4: true\n      nameservers:\n        addresses: [8.8.8.8,8.8.4.4]" >>/etc/netplan/01-netcfg.yaml
   netplan apply
 fi
 
@@ -85,10 +85,10 @@ test_prerequisites() {
 
 echo "I made it here"
 
-fix_eth1_static_ip() {
+fix_eth0_static_ip() {
   USING_KVM=$(sudo lsmod | grep kvm)
   if [ -n "$USING_KVM" ]; then
-    echo "[*] Using KVM, no need to fix DHCP for eth1 iface"
+    echo "[*] Using KVM, no need to fix DHCP for eth0 iface"
     return 0
   fi
   if [ -f /sys/class/net/eth2/address ]; then
@@ -98,37 +98,37 @@ fix_eth1_static_ip() {
     fi
   fi
 
-  # # TODO: try to set correctly directly through vagrant net config
-  # sudo chmod 600 /etc/netplan/50*
-  # sudo netplan set --origin-hint 90-disable-eth1-dhcp ethernets.eth1.dhcp4=false
-  # sudo netplan apply
+  # TODO: try to set correctly directly through vagrant net config
+  sudo chmod 600 /etc/netplan/50*
+  sudo netplan set --origin-hint 90-disable-eth0-dhcp ethernets.eth0.dhcp4=false
+  sudo netplan apply
 
-  # # Fix eth1 if the IP isn't set correctly
-  # ETH1_IP=$(ip -4 addr show eth1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
-  # if [ "$ETH1_IP" != "192.168.56.105" ]; then
-  #   echo "Incorrect IP Address settings detected. Attempting to fix."
-  #   ip link set dev eth1 down
-  #   ip addr flush dev eth1
-  #   ip link set dev eth1 up
-  #   counter=0
-  #   while :; do
-  #     ETH1_IP=$(ip -4 addr show eth1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
-  #     if [ "$ETH1_IP" == "192.168.56.105" ]; then
-  #       echo "[$(date +%H:%M:%S)]: The static IP has been fixed and set to 192.168.56.105"
-  #       break
-  #     else
-  #       if [ $counter -le 20 ]; then
-  #         let counter=counter+1
-  #         echo "[$(date +%H:%M:%S)]: Waiting for IP $counter/20 seconds"
-  #         sleep 1
-  #         continue
-  #       else
-  #         echo "[$(date +%H:%M:%S)]: Failed to fix the broken static IP for eth1. Exiting because this will cause problems with other VMs."
-  #         echo "[$(date +%H:%M:%S)]: eth1's current IP address is $ETH1_IP"
-  #         exit 1
-  #       fi
-  #     fi
-  #   done
+  # Fix eth0 if the IP isn't set correctly
+  ETH0_IP=$(ip -4 addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
+  if [ "$ETH0_IP" != "192.168.56.105" ]; then
+    echo "Incorrect IP Address settings detected. Attempting to fix."
+    ip link set dev eth0 down
+    ip addr flush dev eth0
+    ip link set dev eth0 up
+    counter=0
+    while :; do
+      ETH0_IP=$(ip -4 addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -1)
+      if [ "$ETH0_IP" == "192.168.56.105" ]; then
+        echo "[$(date +%H:%M:%S)]: The static IP has been fixed and set to 192.168.56.105"
+        break
+      else
+        if [ $counter -le 20 ]; then
+          let counter=counter+1
+          echo "[$(date +%H:%M:%S)]: Waiting for IP $counter/20 seconds"
+          sleep 1
+          continue
+        else
+          echo "[$(date +%H:%M:%S)]: Failed to fix the broken static IP for eth0. Exiting because this will cause problems with other VMs."
+          echo "[$(date +%H:%M:%S)]: eth0's current IP address is $ETH0_IP"
+          exit 1
+        fi
+      fi
+    done
   # fi
 
   # Make sure we do have a DNS resolution
@@ -384,21 +384,22 @@ install_zeek() {
   # Environment variables
   NODECFG=/opt/zeek/etc/node.cfg
   if ! grep 'zeek' /etc/apt/sources.list.d/security:zeek.list &> /dev/null; then
-    sh -c "echo 'deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/security:zeek.list"
+    sh -c "echo 'deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/security:zeek.list"
   fi
-  wget -nv https://download.opensuse.org/repositories/security:zeek/xUbuntu_20.04/Release.key -O /tmp/Release.key 
-  apt-key add - </tmp/Release.key &>/dev/null
+  sudo wget -nv https://download.opensuse.org/repositories/security:zeek/xUbuntu_22.04/Release.key -O /tmp/Release.key 
+  sudo apt-key add - </tmp/Release.key &>/dev/null
   # Update APT repositories
-  apt-get -qq -ym update
+  sudo apt-get -qq -ym update
   # Install tools to build and configure Zeek
-  apt-get -qq -ym install zeek-lts crudini
+  sudo apt-get -qq -ym install zeek-lts crudini
   export PATH=$PATH:/opt/zeek/bin
-  pip3 install zkg==2.1.1
+  pip3 install zkg --upgrade package_name
   zkg refresh
   zkg autoconfig
-  zkg install --force salesforce/ja3
+  sed -i 's/isAlive/is_alive/' /usr/local/bin/zkg
+  sudo zkg install --force salesforce/ja3
   # Load Zeek scripts
-  echo '
+  sudo echo '
   @load protocols/ftp/software
   @load protocols/smtp/software
   @load protocols/ssh/software
@@ -423,29 +424,29 @@ install_zeek() {
   ' >>/opt/zeek/share/zeek/site/local.zeek
 
   # Configure Zeek
-  crudini --del $NODECFG zeek
-  crudini --set $NODECFG manager type manager
-  crudini --set $NODECFG manager host localhost
-  crudini --set $NODECFG proxy type proxy
-  crudini --set $NODECFG proxy host localhost
+  sudo crudini --del $NODECFG zeek
+  sudo crudini --set $NODECFG manager type manager
+  sudo crudini --set $NODECFG manager host localhost
+  sudo crudini --set $NODECFG proxy type proxy
+  sudo crudini --set $NODECFG proxy host localhost
 
   # Setup $CPUS numbers of Zeek workers
   # AWS only has a single interface (eth1), so don't monitor eth0 if we're in AWS
   if ! curl -s 169.254.169.254 --connect-timeout 2 >/dev/null; then
     # TL;DR of ^^^: if you can't reach the AWS metadata service, you're not running in AWS
     # Therefore, it's ok to add this.
-    crudini --set $NODECFG worker-eth0 type worker
-    crudini --set $NODECFG worker-eth0 host localhost
-    crudini --set $NODECFG worker-eth0 interface eth0
-    crudini --set $NODECFG worker-eth0 lb_method pf_ring
-    crudini --set $NODECFG worker-eth0 lb_procs "$(nproc)"
+    sudo crudini --set $NODECFG worker-eth0 type worker
+    sudo crudini --set $NODECFG worker-eth0 host localhost
+    sudo crudini --set $NODECFG worker-eth0 interface eth0
+    sudo crudini --set $NODECFG worker-eth0 lb_method pf_ring
+    sudo crudini --set $NODECFG worker-eth0 lb_procs "$(nproc)"
   fi
 
-  crudini --set $NODECFG worker-eth1 type worker
-  crudini --set $NODECFG worker-eth1 host localhost
-  crudini --set $NODECFG worker-eth1 interface eth1
-  crudini --set $NODECFG worker-eth1 lb_method pf_ring
-  crudini --set $NODECFG worker-eth1 lb_procs "$(nproc)"
+  # sudo crudini --set $NODECFG worker-eth1 type worker
+  # sudo crudini --set $NODECFG worker-eth1 host localhost
+  # sudo crudini --set $NODECFG worker-eth1 interface eth1
+  # sudo crudini --set $NODECFG worker-eth1 lb_method pf_ring
+  # sudo crudini --set $NODECFG worker-eth1 lb_procs "$(nproc)"
 
   # Setup Zeek to run at boot
   cp /vagrant/resources/zeek/zeek.service /lib/systemd/system/zeek.service
@@ -508,7 +509,7 @@ install_suricata() {
   python3 setup.py install
 
   cp /vagrant/resources/suricata/suricata.yaml /etc/suricata/suricata.yaml
-  crudini --set --format=sh /etc/default/suricata '' iface eth1
+  crudini --set --format=sh /etc/default/suricata '' iface eth0
   # update suricata signature sources
   suricata-update update-sources
   # disable protocol decode as it is duplicative of Zeek
@@ -569,7 +570,7 @@ install_guacamole() {
   echo "[$(date +%H:%M:%S)]: Setting up Guacamole..."
   cd /opt || exit 1
   echo "[$(date +%H:%M:%S)]: Downloading Guacamole..."
-  wget --progress=bar:force "https://apache.org/dyn/closer.lua/guacamole/1.3.0/source/guacamole-server-1.3.0.tar.gz?action=download" -O guacamole-server-1.3.0.tar.gz
+  wget --progress=bar:force "https://apache.org/dyn/closer.lua/guacamole/1.5.4/source/guacamole-server-1.5.4.tar.gz?action=download" -O guacamole-server-1.5.4.tar.gz
   tar -xf guacamole-server-1.3.0.tar.gz && cd guacamole-server-1.3.0 || echo "[-] Unable to find the Guacamole folder."
   echo "[$(date +%H:%M:%S)]: Configuring Guacamole and running 'make' and 'make install'..."
   ./configure --with-init-dir=/etc/init.d && make --quiet &>/dev/null && make --quiet install &>/dev/null || echo "[-] An error occurred while installing Guacamole."
@@ -627,7 +628,7 @@ main() {
   apt_install_prerequisites
   modify_motd
   test_prerequisites
-  fix_eth1_static_ip
+  fix_eth0_static_ip
   install_splunk
   download_palantir_osquery_config
   install_fleet_import_osquery_config
