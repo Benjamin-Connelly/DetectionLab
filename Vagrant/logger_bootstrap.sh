@@ -118,7 +118,7 @@ fix_eth0_static_ip() {
         break
       else
         if [ $counter -le 20 ]; then
-          let counter=counter+1
+          (( counter=counter+1 )) || true
           echo "[$(date +%H:%M:%S)]: Waiting for IP $counter/20 seconds"
           sleep 1
           continue
@@ -387,7 +387,7 @@ install_zeek() {
     sh -c "echo 'deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/security:zeek.list"
   fi
   sudo wget -nv https://download.opensuse.org/repositories/security:zeek/xUbuntu_22.04/Release.key -O /tmp/Release.key 
-  sudo apt-key add - </tmp/Release.key &>/dev/null
+  apt-key add - </tmp/Release.key &>/dev/null
   # Update APT repositories
   sudo apt-get -qq -ym update
   # Install tools to build and configure Zeek
