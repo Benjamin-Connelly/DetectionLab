@@ -129,7 +129,7 @@ fix_eth0_static_ip() {
         fi
       fi
     done
-  # fi
+   fi
 
   # Make sure we do have a DNS resolution
   while true; do
@@ -399,7 +399,7 @@ install_zeek() {
   sed -i 's/isAlive/is_alive/' /usr/local/bin/zkg
   sudo zkg install --force salesforce/ja3
   # Load Zeek scripts
-  sudo echo '
+  echo '
   @load protocols/ftp/software
   @load protocols/smtp/software
   @load protocols/ssh/software
@@ -421,7 +421,7 @@ install_zeek() {
   
   redef ignore_checksums = T;
   
-  ' >>/opt/zeek/share/zeek/site/local.zeek
+  ' | sudo tee /opt/zeek/share/zeek/site/local.zeek
 
   # Configure Zeek
   sudo crudini --del $NODECFG zeek

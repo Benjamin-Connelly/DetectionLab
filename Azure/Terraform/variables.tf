@@ -1,18 +1,22 @@
 variable "region" {
+  type = string
   default = "West US 2"
 }
 
 variable "profile" {
+  type = string
   default = "terraform"
 }
 
 variable "availability_zone" {
   description = "https://docs.microsoft.com/en-us/azure/availability-zones/az-overview"
+  type = string
   default     = ""
 }
 
 variable "public_key_name" {
   description = "A name for SSH Keypair to use to auth to logger. Can be anything you specify."
+  type = string
   default     = "id_logger"
 }
 
@@ -43,12 +47,6 @@ variable "external_dns_servers" {
 
 variable "workspaceKey" {
   description = "WorkspaceKey of the Log Analytics workspace"
-  type        = string
-  default     = ""
-}
-
-variable "workspaceId" {
-  description = "WorkspaceID of the log Analytics workspace"
   type        = string
   default     = ""
 }
