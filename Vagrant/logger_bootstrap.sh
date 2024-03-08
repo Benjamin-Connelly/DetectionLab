@@ -78,7 +78,7 @@ test_prerequisites() {
   done
 }
 
-echo "I made it here"
+echo 'I made it here'
 
 fix_eth0_static_ip() {
   USING_KVM=$(sudo lsmod | grep kvm)
