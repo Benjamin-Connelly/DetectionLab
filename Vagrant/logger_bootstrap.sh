@@ -94,7 +94,7 @@ fix_eth0_static_ip() {
   fi
 
   # TODO: try to set correctly directly through vagrant net config
-  chmod 600 50-cloud-init.yaml
+  chmod 600 /etc/netplan/50-cloud-init.yaml
   netplan set --origin-hint 90-disable-eth0-dhcp ethernets.eth0.dhcp4=false
   netplan apply
 
