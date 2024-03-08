@@ -386,6 +386,7 @@ install_zeek() {
   # Update APT repositories
   sudo apt-get -qq -ym update
   # Install tools to build and configure Zeek
+  export DEBIAN_FRONTEND=noninteractive
   sudo apt-get -qq -ym install zeek-lts crudini
   export PATH=$PATH:/opt/zeek/bin
   pip3 install zkg --upgrade package_name
