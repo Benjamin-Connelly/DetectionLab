@@ -567,12 +567,13 @@ install_guacamole() {
   cd /opt || exit 1
   echo "[$(date +%H:%M:%S)]: Downloading Guacamole..."
   wget --progress=bar:force "https://apache.org/dyn/closer.lua/guacamole/1.5.4/source/guacamole-server-1.5.4.tar.gz?action=download" -O guacamole-server-1.5.4.tar.gz
-  tar -xf guacamole-server-1.3.0.tar.gz && cd guacamole-server-1.3.0 || echo "[-] Unable to find the Guacamole folder."
+  tar -xf guacamole-server-1.5.4.tar.gz && cd guacamole-server-1.5.4 || echo "[-] Unable to find the Guacamole folder."
   echo "[$(date +%H:%M:%S)]: Configuring Guacamole and running 'make' and 'make install'..."
-  ./configure --with-init-dir=/etc/init.d && make --quiet &>/dev/null && make --quiet install &>/dev/null || echo "[-] An error occurred while installing Guacamole."
+  #./configure --with-init-dir=/etc/init.d && make --quiet &>/dev/null && make --quiet install &>/dev/null || echo "[-] An error occurred while installing Guacamole."
+  ./configure --with-systemd-dir=/etc/systemd/system/ && make && make || echo "[-] An error occurred while installing Guacamole."
   ldconfig
   cd /var/lib/tomcat9/webapps || echo "[-] Unable to find the tomcat9/webapps folder."
-  wget --progress=bar:force "https://apache.org/dyn/closer.lua/guacamole/1.3.0/binary/guacamole-1.3.0.war?action=download" -O guacamole.war
+  wget --progress=bar:force "https://apache.org/dyn/closer.lua/guacamole/1.5.4/binary/guacamole-1.5.4.war?action=download" -O guacamole.war
   mkdir /etc/guacamole
   mkdir /etc/guacamole/shares
   sudo chmod 777 /etc/guacamole/shares
@@ -580,6 +581,7 @@ install_guacamole() {
   cp /vagrant/resources/guacamole/user-mapping.xml /etc/guacamole/
   cp /vagrant/resources/guacamole/guacamole.properties /etc/guacamole/
   cp /vagrant/resources/guacamole/guacd.service /lib/systemd/system
+ 
   sudo ln -s /etc/guacamole/guacamole.properties /usr/share/tomcat9/.guacamole/
   sudo ln -s /etc/guacamole/user-mapping.xml /usr/share/tomcat9/.guacamole/
   # Thank you Kifarunix: https://kifarunix.com/install-guacamole-on-debian-11/
