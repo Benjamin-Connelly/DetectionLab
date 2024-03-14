@@ -334,6 +334,18 @@ resource "azurerm_public_ip" "dc-publicip" {
   resource_group_name = azurerm_resource_group.detectionlab.name
   allocation_method   = "Static"
 
+provisioner "remote-exec" {
+    inline = ["inline = [
+         "powershell.exe Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+        ]"]
+
+    connection {
+      type     = "winrm"
+      user     = "vagrant"
+      password = "vagrant"
+    }
+  }
+
   tags = {
     role = "dc"
   }

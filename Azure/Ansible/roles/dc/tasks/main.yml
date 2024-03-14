@@ -8,12 +8,6 @@
       - 8.8.8.8
     log_path: C:\dns_log.txt
 
-- name: Installing choco-extras
-  win_shell: ".\\install-choco-extras.ps1"
-  args:
-    chdir: 'c:\vagrant\scripts'
-  register: install_choco-extras
-
 - name: Install git
   win_chocolatey:
     name: git
