@@ -8,6 +8,11 @@
       - 8.8.8.8
     log_path: C:\dns_log.txt
 
+- name: Install .net 4.8
+  ansible.windows.win_package:
+    path: https://go.microsoft.com/fwlink/?linkid=2088631
+    arguments: /install /passive
+
 - name: Install git
   win_chocolatey:
     name: git
@@ -19,7 +24,7 @@
   register: dir
 
 - name: Git clone Detectionlab
-  win_shell: git clone https://github.com/clong/DetectionLab.git
+  win_shell: git clone https://github.com/Benjamin-Connelly/DetectionLab.git
   args:
     chdir: 'c:\'
   when: not dir.stat.exists
