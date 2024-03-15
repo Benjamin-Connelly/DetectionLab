@@ -22,7 +22,7 @@ reg add HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce /v StartWinRM /t 
 Restart-Service winrm
 netsh advfirewall firewall add rule name="Port 5985" dir=in action=allow protocol=TCP localport=5985
 powershell.exe -c "[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12"
-powershell.exe -c "Register-PSRepository -Default -Verbose"
+powershell.exe -c "Register-PSRepository -Default"
 powershell.exe -c "Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted"
 powershell.exe -c "Install-PackageProvider ChocolateyGet -Force"
 powershell.exe -c "Install-Package -Name git -Provider ChocolateyGet"

@@ -8,11 +8,6 @@
       - 8.8.8.8
     log_path: C:\dns_log.txt
 
-- name: Install git
-  win_chocolatey:
-    name: git
-    state: present
-
 - name: Check if existing DetectionLab directory
   win_stat:
     path: 'c:\DetectionLab'
