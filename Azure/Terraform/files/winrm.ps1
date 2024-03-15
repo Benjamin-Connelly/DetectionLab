@@ -20,5 +20,10 @@ netsh advfirewall firewall set rule group="Windows Remote Administration" new en
 netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" new enable=yes action=allow remoteip=any
 reg add HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce /v StartWinRM /t REG_SZ /f /d "cmd.exe /c 'sc config winrm start= auto & sc start winrm'"
 Restart-Service winrm
-netsh advfirewall firewall add rule name="Port 5985" dir=in action=allow protocol=TCP localport=5985 
+netsh advfirewall firewall add rule name="Port 5985" dir=in action=allow protocol=TCP localport=5985
+powershell.exe -c "[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12"
+powershell.exe -c "Register-PSRepository -Default -Verbose"
+powershell.exe -c "Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted"
+powershell.exe -c "Install-PackageProvider ChocolateyGet -Force"
+powershell.exe -c "Install-Package -Name git -Provider ChocolateyGet"
  
